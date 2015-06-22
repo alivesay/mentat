@@ -7,6 +7,8 @@ var requireDirectory = require('require-directory');
 
 var env = process.env.NODE_ENV || 'development';
 
+var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
+
 var Mentat = {
   server: undefined,
   settings: {},
@@ -14,7 +16,6 @@ var Mentat = {
   controllers: {},
   handlers: {},
   io: {},
-  socket: {},
 
   start: function start() {
     var self = this;
@@ -46,7 +47,7 @@ var Mentat = {
 
   _loadSettings: function _loadSettings () {
     var self = this;
-    self.settings = require('./config/settings');
+    self.settings = require(path.join(APP_PATH, '/config/settings'));
   },
 
   _loadServer: function _loadServer() {
@@ -75,14 +76,15 @@ var Mentat = {
     self.io = io;
 
     self.server.app.io.on('connection', function (socket) {
-      console.log('socket.io: connected');
+      var remoteAddress = socket.client.conn.remoteAddress;
 
-      self.server.app.socket = socket;
-      self.socket = socket;
+      console.log('socket.io: [' + socket.id + '] connected: ' + remoteAddress);
 
-      fs.readdirSync(path.join(__dirname, '/lib/socket_plugins')).forEach(function (file) {
-        require('./lib/socket_plugins/' + file)(socket);
-        console.log('socket.io: loaded module: ' + file.split('.')[0]);
+      var socketPluginsPath = path.join(APP_PATH, '/lib/socket_plugins');
+
+      fs.readdirSync(socketPluginsPath).forEach(function (file) {
+        require(path.join(socketPluginsPath, file))(socket);
+        console.log('socket.io: [' + socket.id + '] loaded module: ' + file.split('.')[0]);
       });
     });
   },
@@ -91,9 +93,9 @@ var Mentat = {
     var self = this;
 
     var Sequelize = require('sequelize');
-    var config = require(path.join(__dirname, '/config/database.json'))[env];
+    var config = require(path.join(APP_PATH, '/config/database.json'))[env];
     var sequelize = new Sequelize(config.database, config.username, config.password, config);
-    var modelsPath = path.join(__dirname, 'db/models');
+    var modelsPath = path.join(APP_PATH, 'db/models');
 
     fs
       .readdirSync(path.join(modelsPath))
@@ -115,7 +117,7 @@ var Mentat = {
 
   _loadHandlers: function _loadHandlers () {
     var self = this;
-    self.handlers = requireDirectory(module, path.join(__dirname, 'handlers'), {
+    self.handlers = requireDirectory(module, path.join(APP_PATH, 'handlers'), {
       rename: function (name) {
         return name.split('.')[0];
       },
@@ -129,12 +131,12 @@ var Mentat = {
     var self = this;
 
     fs
-      .readdirSync(path.join(__dirname, 'controllers'))
+      .readdirSync(path.join(APP_PATH, 'controllers'))
       .filter(function(file) {
         return file.indexOf('.') !== 0;
       })
       .forEach(function (file) {
-        var controller = require('./controllers/' + file);
+        var controller = require(path.join(APP_PATH, '/controllers/', file));
         self.controllers[controller.name] = controller;
         console.log('controller loaded: ' + controller.name);
       });
@@ -142,13 +144,13 @@ var Mentat = {
 
   _loadRoutes: function _loadRoutes () {
     var self = this;
-    var routes = require('./config/routes')(self.handlers);
+    var routes = require(path.join(APP_PATH, '/config/routes'))(self.handlers);
     self.server.route(routes);
   },
 
   _loadMethods: function _loadMethods () {
     var self = this;
-    self.server.method(require('./config/methods'));
+    self.server.method(require(path.join(APP_PATH, '/config/methods')));
   },
 
   _loadTransporter: function _loadTransporter() {
