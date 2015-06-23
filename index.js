@@ -14,12 +14,11 @@ var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
 function Handler(name, obj) {
   this.name = name + 'Handler';
   _.extend(this, obj);
-  
 }
 
 Handler.buildDefaultResponder = function buildDefaultResponder (reply) {
   var Boom = require('boom');
-  
+
   return function defaultReplyResponder (err, result) {
     if (err) {
       return reply(Boom.badRequest(err));
@@ -201,8 +200,17 @@ var Mentat = {
     var self = this;
     self.server.app.transporter = require('nodemailer')
       .createTransport(self.settings.nodemailerOptions);
-  }
+  },
 
+  promiseToCallback: function promiseToCallback(promise, callback) {
+    promise
+      .then(function (result) {
+        return callback(null, result);
+      })
+      .catch(function (err) {
+        return  callback(err, null);
+      });
+  }
 };
 
 module.exports = Mentat;
