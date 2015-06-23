@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
+var util = require('util');
 var path = require('path');
 var fs = require('fs');
 var requireDirectory = require('require-directory');
@@ -9,6 +10,30 @@ var env = process.env.NODE_ENV || 'development';
 
 var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
 
+
+function Handler(name, obj) {
+  this.name = name + 'Handler';
+  _.extend(this, obj);
+  
+}
+
+Handler.buildDefaultResponder = function buildDefaultResponder (reply) {
+  var Boom = require('boom');
+  
+  return function defaultReplyResponder (err, result) {
+    if (err) {
+      return reply(Boom.badRequest(err));
+    }
+
+    return reply(result).code(200);
+  }
+}
+
+function Controller(name, obj) {
+  this.name = name + 'Handler';
+  _.extend(this, obj);
+}
+
 var Mentat = {
   server: undefined,
   settings: {},
@@ -16,6 +41,9 @@ var Mentat = {
   controllers: {},
   handlers: {},
   io: {},
+
+  Handler: Handler,
+  Controller: Controller,
 
   start: function start() {
     var self = this;
@@ -40,7 +68,7 @@ var Mentat = {
     }
 
     self.server.start(function serverStartDone () {
-      console.log('Server listening: %s', self.server.info.uri);
+      console.log('server listening: %s', self.server.info.uri);
       self._loadSockets();
     });
   },
@@ -117,12 +145,28 @@ var Mentat = {
 
   _loadHandlers: function _loadHandlers () {
     var self = this;
+
     self.handlers = requireDirectory(module, path.join(APP_PATH, 'handlers'), {
       rename: function (name) {
         return name.split('.')[0];
       },
       visit: function (obj) {
         console.log('handler loaded: ' + obj.name);
+        if (obj.routes !== undefined) {
+         _.each(obj.routes, function (route) {
+ 
+            self.server.route({
+              method: route.method,
+              path: route.path,
+              config: {
+                handler: obj[route.method],
+                validate: route.validate
+              }
+            });
+
+            console.log(util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
+          });
+        }
       }
     });
   },
@@ -157,17 +201,8 @@ var Mentat = {
     var self = this;
     self.server.app.transporter = require('nodemailer')
       .createTransport(self.settings.nodemailerOptions);
-  },
-
-  Controller: function Controller (name, obj) {
-    this.name = name + 'Controller';
-    _.extend(this, obj);
-  },
-
-  Handler: function Handler (name, obj) {
-    this.name = name + 'Handler';
-    _.extend(this, obj);
   }
+
 };
 
 module.exports = Mentat;
