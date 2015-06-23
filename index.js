@@ -30,7 +30,7 @@ Handler.buildDefaultResponder = function buildDefaultResponder (reply) {
 }
 
 function Controller(name, obj) {
-  this.name = name + 'Handler';
+  this.name = name + 'Controller';
   _.extend(this, obj);
 }
 
