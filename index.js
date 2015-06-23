@@ -22,10 +22,10 @@ var Mentat = {
 
     self._loadSettings();
     self._loadServer();
-    self._loadModels();
     self._loadTransporter();
-    self._loadMethods();
+    self._loadModels();
     self._loadControllers();
+    self._loadMethods();
     self._loadHandlers();
     self._loadRoutes();
 
@@ -157,6 +157,16 @@ var Mentat = {
     var self = this;
     self.server.app.transporter = require('nodemailer')
       .createTransport(self.settings.nodemailerOptions);
+  },
+
+  Controller: function Controller (name, obj) {
+    this.name = name + 'Controller';
+    _.extend(this, obj);
+  },
+
+  Handler: function Handler (name, obj) {
+    this.name = name + 'Handler';
+    _.extend(this, obj);
   }
 };
 
