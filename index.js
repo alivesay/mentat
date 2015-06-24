@@ -24,6 +24,10 @@ Handler.buildDefaultResponder = function buildDefaultResponder (reply) {
       return reply(Boom.badRequest(err));
     }
 
+    if (result === null || result === undefined) {
+      return reply(Boom.notFound());
+    }
+    
     return reply(result).code(200);
   }
 }
