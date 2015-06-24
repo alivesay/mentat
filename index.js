@@ -208,7 +208,7 @@ var Mentat = {
         return callback(null, result);
       })
       .catch(function (err) {
-        return  callback(err, null);
+        return callback(err, null);
       });
   }
 };
