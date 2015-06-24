@@ -204,17 +204,8 @@ var Mentat = {
     var self = this;
     self.server.app.transporter = require('nodemailer')
       .createTransport(self.settings.nodemailerOptions);
-  },
-
-  promiseToCallback: function promiseToCallback(promise, callback) {
-    promise
-      .then(function (result) {
-        return callback(null, result);
-      })
-      .catch(function (err) {
-        return callback(err, null);
-      });
   }
+
 };
 
 module.exports = Mentat;
