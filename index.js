@@ -6,36 +6,8 @@ var path = require('path');
 var fs = require('fs');
 var requireDirectory = require('require-directory');
 
-var env = process.env.NODE_ENV || 'development';
-
+var NODE_ENV = process.env.NODE_ENV || 'development';
 var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
-
-
-function Handler(name, obj) {
-  this.name = name + 'Handler';
-  _.extend(this, obj);
-}
-
-Handler.buildDefaultResponder = function buildDefaultResponder (reply) {
-  var Boom = require('boom');
-
-  return function defaultReplyResponder (err, result) {
-    if (err) {
-      return reply(Boom.badRequest(err));
-    }
-
-    if (result === null || result === undefined) {
-      return reply(Boom.notFound());
-    }
-    
-    return reply(result).code(200);
-  }
-}
-
-function Controller(name, obj) {
-  this.name = name + 'Controller';
-  _.extend(this, obj);
-}
 
 var Mentat = {
   server: undefined,
@@ -44,6 +16,7 @@ var Mentat = {
   controllers: {},
   handlers: {},
   io: {},
+  transporter: {},
 
   Handler: Handler,
   Controller: Controller,
@@ -60,7 +33,7 @@ var Mentat = {
     self._loadHandlers();
     self._loadRoutes();
 
-    if (env === 'development') {
+    if (NODE_ENV === 'development') {
       self.server.on('response', function (request) {
         console.log("[%s] %s %s - %s",
           request.info.remoteAddress,
@@ -86,7 +59,7 @@ var Mentat = {
     var Hapi = require('hapi');
 
     self.server = new Hapi.Server(_.defaults(self.settings.hapi.serverOptions || {},
-      env === 'development' ? {
+      NODE_ENV === 'development' ? {
         debug: {
           request: ['error'],
           log: ['error']
@@ -94,8 +67,8 @@ var Mentat = {
       } : {}));
 
     self.server.connection(_.defaults(self.settings.hapi.connectionOptions || {}, {
-      host: process.env.IP || '0.0.0.0',
-      port: process.env.PORT || '8080'
+      host: NODE_ENV.IP || '0.0.0.0',
+      port: NODE_ENV.PORT || '8080'
     }));
   },
 
@@ -124,7 +97,7 @@ var Mentat = {
     var self = this;
 
     var Sequelize = require('sequelize');
-    var config = require(path.join(APP_PATH, '/config/database.json'))[env];
+    var config = require(path.join(APP_PATH, '/config/database.json'))[NODE_ENV];
     var sequelize = new Sequelize(config.database, config.username, config.password, config);
     var modelsPath = path.join(APP_PATH, 'db/models');
 
@@ -204,8 +177,40 @@ var Mentat = {
     var self = this;
     self.server.app.transporter = require('nodemailer')
       .createTransport(self.settings.nodemailerOptions);
+
+    self.transporter = self.server.app.transporter;
   }
 
 };
+
+function Handler(name, obj) {
+  this.name = name + 'Handler';
+  _.extend(this, obj);
+}
+
+Handler.buildDefaultResponder = function buildDefaultResponder (reply, options) {
+  var Boom = require('boom');
+
+  options = _.defaults(options || {}, {
+    notFoundOnNull: true
+  });
+
+  return function defaultReplyResponder (err, result) {
+    if (err) {
+      return reply(Boom.badRequest(err));
+    }
+
+    if (options.notFoundOnNull && (result === null || result === undefined)) {
+      return reply(Boom.notFound());
+    }
+    
+    return reply(result).code(200);
+  }
+}
+
+function Controller(name, obj) {
+  this.name = name + 'Controller';
+  _.extend(this, obj);
+}
 
 module.exports = Mentat;
