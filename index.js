@@ -23,6 +23,7 @@ var Mentat = {
 
   start: function start() {
     var self = this;
+    var Inert = require('inert');
 
     self._loadSettings();
     self._loadServer();
@@ -31,21 +32,29 @@ var Mentat = {
     self._loadControllers();
     self._loadMethods();
     self._loadHandlers();
-    self._loadRoutes();
 
-    if (NODE_ENV === 'development') {
-      self.server.on('response', function (request) {
+    self.server.register(Inert, function (err) {
+      if (err) {
+        throw err;
+      }
+
+      self._loadRoutes();
+
+      if (NODE_ENV === 'development') {
+        self.server.on('response', function (request) {
         console.log("[%s] %s %s - %s",
-          request.info.remoteAddress,
-          request.method.toUpperCase(),
-          request.url.path,
-          request.response.statusCode);
-      });
-    }
+                    request.info.remoteAddress,
+                    request.method.toUpperCase(),
+                    request.url.path,
+                    request.response.statusCode);
+        });
+      }
 
-    self.server.start(function serverStartDone () {
-      console.log('server listening: %s', self.server.info.uri);
-      self._loadSockets();
+      self.server.start(function serverStartDone () {
+        console.log('server listening: %s', self.server.info.uri);
+        self._loadSockets();
+      });
+
     });
   },
 
