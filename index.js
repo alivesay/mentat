@@ -23,7 +23,9 @@ var Mentat = {
 
   start: function start() {
     var self = this;
-    var Inert = require('inert');
+    var _plugins = [
+      { register: require('inert') }
+    ];
 
     self._loadSettings();
     self._loadServer();
@@ -33,7 +35,7 @@ var Mentat = {
     self._loadMethods();
     self._loadHandlers();
 
-    self.server.register(Inert, function (err) {
+    self.server.register(_plugins, function (err) {
       if (err) {
         throw err;
       }
