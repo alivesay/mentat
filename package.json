@@ -1,6 +1,6 @@
 {
   "name": "mentat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight, real-time web app framework built with Hapi, Angular, Sequelize, Jade, and Socket.IO.",
   "main": "index.js",
   "scripts": {
