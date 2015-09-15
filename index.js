@@ -24,10 +24,12 @@ var Mentat = {
   start: function start() {
     var self = this;
     var _plugins = [
-      { register: require('inert') }
+      { register: require('inert') },
+      { register: require('hapi-auth-jwt2') }
     ];
 
     self._loadSettings();
+    self._loadValidator();
     self._loadServer();
     self._loadTransporter();
     self._loadModels();
@@ -39,6 +41,14 @@ var Mentat = {
       if (err) {
         throw err;
       }
+
+      self.server.auth.strategy('jwt', 'jwt', {
+        key: self.settings.authKey,
+        validateFunc: self.validator,
+        verifyOptions: { algorithms: [ 'HS256' ] }
+      });
+
+      self.server.auth.default('jwt');
 
       self._loadRoutes();
 
@@ -63,6 +73,11 @@ var Mentat = {
   _loadSettings: function _loadSettings () {
     var self = this;
     self.settings = require(path.join(APP_PATH, '/config/settings'));
+  },
+
+  _loadValidator: function _loadValidator () {
+    var self = this;
+    self.validator = require(path.join(APP_PATH, '/config/validator'));
   },
 
   _loadServer: function _loadServer() {
@@ -147,7 +162,8 @@ var Mentat = {
               path: route.path,
               config: {
                 handler: obj[route.method],
-                validate: route.validate
+                validate: route.validate,
+                auth: route.auth
               }
             });
 
