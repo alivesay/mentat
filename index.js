@@ -76,7 +76,7 @@ var Mentat = {
       self.settings = require(path.join(APP_PATH, 'config/settings'));
     } catch (e) {
       if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
-        self.settings = {};
+        self.settings = { hapi: {} };
         return;
       }
     
@@ -99,7 +99,7 @@ var Mentat = {
   _loadServer: function _loadServer() {
     var self = this;
     var Hapi = require('hapi');
-
+    
     self.server = new Hapi.Server(_.defaults(self.settings.hapi.serverOptions || {},
       NODE_ENV === 'development' ? {
         debug: {
