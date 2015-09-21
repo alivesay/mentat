@@ -72,12 +72,28 @@ var Mentat = {
 
   _loadSettings: function _loadSettings () {
     var self = this;
-    self.settings = require(path.join(APP_PATH, 'config/settings'));
+    try {
+      self.settings = require(path.join(APP_PATH, 'config/settings'));
+    } catch (e) {
+      if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
+        self.settings = {};
+        return;
+      }
+    
+      throw e;
+    }
   },
 
   _loadValidator: function _loadValidator () {
     var self = this;
-    self.validator = require(path.join(APP_PATH, 'config/validator'));
+    try {
+      self.validator = require(path.join(APP_PATH, 'config/validator'));
+    } catch (e) {
+      if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
+        return;
+      }
+      throw e;
+    }
   },
 
   _loadServer: function _loadServer() {
