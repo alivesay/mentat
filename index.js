@@ -43,7 +43,7 @@ var Mentat = {
       }
 
       self.server.auth.strategy('jwt', 'jwt', {
-        key: self.settings.authKey,
+        key: self.settings.authKey || '0x123456789',
         validateFunc: self.validator,
         verifyOptions: { algorithms: [ 'HS256' ] }
       });
@@ -90,7 +90,7 @@ var Mentat = {
     if (validator) {
       self.validator = validator;
     } else {
-      self.validator =  function (decoded, request, callback) {
+      self.validator = function (decoded, request, callback) {
         return callback(null, true);
       }
     }
