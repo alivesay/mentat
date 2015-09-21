@@ -89,6 +89,10 @@ var Mentat = {
     var validator = requireIfExists(path.join(APP_PATH, 'config/validator'));
     if (validator) {
       self.validator = validator;
+    } else {
+      self.validator =  function (decoded, request, callback) {
+        return callback(null, true);
+      }
     }
   },
 
