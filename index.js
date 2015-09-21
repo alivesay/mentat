@@ -160,31 +160,38 @@ var Mentat = {
 */
   _loadHandlers: function _loadHandlers () {
     var self = this;
-
-    self.handlers = requireDirectory(module, path.join(APP_PATH, 'handlers'), {
-      rename: function (name) {
-        return name.split('.')[0];
-      },
-      visit: function (obj) {
-        console.log('handler loaded: ' + obj.name);
-        if (obj.routes !== undefined) {
-         _.each(obj.routes, function (route) {
- 
-            self.server.route({
-              method: route.method,
-              path: route.path,
-              config: {
-                handler: obj[route.method],
-                validate: route.validate,
-                auth: route.auth
-              }
+    
+    try {
+      self.handlers = requireDirectory(module, path.join(APP_PATH, 'handlers'), {
+        rename: function (name) {
+          return name.split('.')[0];
+        },
+        visit: function (obj) {
+          console.log('handler loaded: ' + obj.name);
+          if (obj.routes !== undefined) {
+           _.each(obj.routes, function (route) {
+   
+              self.server.route({
+                method: route.method,
+                path: route.path,
+                config: {
+                  handler: obj[route.method],
+                  validate: route.validate,
+                  auth: route.auth
+                }
+              });
+  
+              console.log(util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
             });
-
-            console.log(util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
-          });
+          }
         }
+      });
+    } catch (e) {
+      if (e instanceof Error && e.code === 'ENOENT') {
+        return;
       }
-    });
+      throw e;
+    }
   },
 
   _loadControllers: function _loadControllers () {
