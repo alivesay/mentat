@@ -128,10 +128,20 @@ var Mentat = {
 
       var socketPluginsPath = path.join(APP_PATH, 'sockets');
 
-      fs.readdirSync(socketPluginsPath).forEach(function (file) {
-        require(path.join(socketPluginsPath, file))(socket);
-        console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
-      });
+      try {
+        fs.readdirSync(socketPluginsPath).forEach(function (file) {
+          var socketsModule = requireIfExists(path.join(socketPluginsPath, file));
+          if (socketsModule) {
+            socketsModule(socket);
+            console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
+          }
+        });
+      } catch (e) {
+        if (e instanceof Error && e.code === 'ENOENT') {
+          return;
+        }
+        throw e;
+      }
     });
   },
 
