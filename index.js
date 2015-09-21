@@ -12,7 +12,7 @@ var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
 var Mentat = {
   server: undefined,
   settings: {},
-  models: {},
+  // models: {},
   controllers: {},
   handlers: {},
   io: {},
@@ -32,7 +32,7 @@ var Mentat = {
     self._loadValidator();
     self._loadServer();
     self._loadTransporter();
-    self._loadModels();
+    //self._loadModels();
     self._loadControllers();
     self._loadMethods();
     self._loadHandlers();
@@ -72,12 +72,12 @@ var Mentat = {
 
   _loadSettings: function _loadSettings () {
     var self = this;
-    self.settings = require(path.join(APP_PATH, '/config/settings'));
+    self.settings = require(path.join(APP_PATH, 'config/settings'));
   },
 
   _loadValidator: function _loadValidator () {
     var self = this;
-    self.validator = require(path.join(APP_PATH, '/config/validator'));
+    self.validator = require(path.join(APP_PATH, 'config/validator'));
   },
 
   _loadServer: function _loadServer() {
@@ -110,20 +110,21 @@ var Mentat = {
 
       console.log('socket.io: [' + socket.id + '] connected: ' + remoteAddress);
 
-      var socketPluginsPath = path.join(APP_PATH, '/lib/socket_plugins');
+      var socketPluginsPath = path.join(APP_PATH, 'sockets');
 
       fs.readdirSync(socketPluginsPath).forEach(function (file) {
         require(path.join(socketPluginsPath, file))(socket);
-        console.log('socket.io: [' + socket.id + '] loaded module: ' + file.split('.')[0]);
+        console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
       });
     });
   },
 
+/*
   _loadModels: function _loadModels () {
     var self = this;
 
     var Sequelize = require('sequelize');
-    var config = require(path.join(APP_PATH, '/config/database.json'))[NODE_ENV];
+    var config = require(path.join(APP_PATH, 'config/database.json'))[NODE_ENV];
     var sequelize = new Sequelize(config.database, config.username, config.password, config);
     var modelsPath = path.join(APP_PATH, 'db/models');
 
@@ -144,7 +145,7 @@ var Mentat = {
       }
     });
   },
-
+*/
   _loadHandlers: function _loadHandlers () {
     var self = this;
 
@@ -183,7 +184,7 @@ var Mentat = {
         return file.indexOf('.') !== 0;
       })
       .forEach(function (file) {
-        var controller = require(path.join(APP_PATH, '/controllers/', file));
+        var controller = require(path.join(APP_PATH, 'controllers/', file));
         self.controllers[controller.name] = controller;
         console.log('controller loaded: ' + controller.name);
       });
@@ -191,13 +192,13 @@ var Mentat = {
 
   _loadRoutes: function _loadRoutes () {
     var self = this;
-    var routes = require(path.join(APP_PATH, '/config/routes'))(self.handlers);
+    var routes = require(path.join(APP_PATH, 'config/routes'))(self.handlers);
     self.server.route(routes);
   },
 
   _loadMethods: function _loadMethods () {
     var self = this;
-    self.server.method(require(path.join(APP_PATH, '/config/methods')));
+    self.server.method(require(path.join(APP_PATH, 'config/methods')));
   },
 
   _loadTransporter: function _loadTransporter() {
