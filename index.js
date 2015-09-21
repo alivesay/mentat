@@ -62,7 +62,11 @@ var Mentat = {
         });
       }
 
-      self.server.start(function serverStartDone () {
+      self.server.start(function serverStartDone (err) {
+        if (err) {
+          console.log(err);
+          return;
+        }
         console.log('server listening: %s', self.server.info.uri);
         self._loadSockets();
       });
