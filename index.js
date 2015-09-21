@@ -86,13 +86,9 @@ var Mentat = {
 
   _loadValidator: function _loadValidator () {
     var self = this;
-    try {
-      self.validator = require(path.join(APP_PATH, 'config/validator'));
-    } catch (e) {
-      if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
-        return;
-      }
-      throw e;
+    var validator = requireIfExists(path.join(APP_PATH, 'config/validator'));
+    if (validator) {
+      self.validator = validator;
     }
   },
 
@@ -194,27 +190,39 @@ var Mentat = {
   _loadControllers: function _loadControllers () {
     var self = this;
 
-    fs
-      .readdirSync(path.join(APP_PATH, 'controllers'))
-      .filter(function(file) {
-        return file.indexOf('.') !== 0;
-      })
-      .forEach(function (file) {
-        var controller = require(path.join(APP_PATH, 'controllers/', file));
-        self.controllers[controller.name] = controller;
-        console.log('controller loaded: ' + controller.name);
-      });
+    try {
+      fs
+        .readdirSync(path.join(APP_PATH, 'controllers'))
+        .filter(function(file) {
+          return file.indexOf('.') !== 0;
+        })
+        .forEach(function (file) {
+          var controller = require(path.join(APP_PATH, 'controllers/', file));
+          self.controllers[controller.name] = controller;
+          console.log('controller loaded: ' + controller.name);
+        });
+    } catch (e) {
+      if (e instanceof Error && e.code === 'ENOENT') {
+        return;
+      }
+      throw e;
+    }
   },
 
   _loadRoutes: function _loadRoutes () {
     var self = this;
-    var routes = require(path.join(APP_PATH, 'config/routes'))(self.handlers);
-    self.server.route(routes);
+    var routes = requireIfExists(path.join(APP_PATH, 'config/routes'));
+    if (routes) {
+      self.server.route(routes(self.handlers));
+    }
   },
 
   _loadMethods: function _loadMethods () {
     var self = this;
-    self.server.method(require(path.join(APP_PATH, 'config/methods')));
+    var methods = requireIfExists(path.join(APP_PATH, 'config/methods'))
+    if (methods) {
+      self.server.method(methods);
+    }
   },
 
   _loadTransporter: function _loadTransporter() {
@@ -226,6 +234,18 @@ var Mentat = {
   }
 
 };
+
+function requireIfExists(path) {
+  try {
+     var required = require(path);
+  } catch (e) {
+    if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
+      return undefined;
+    }
+    throw e;
+  }
+  return required;
+}
 
 function Handler(name, obj) {
   this.name = name + 'Handler';
