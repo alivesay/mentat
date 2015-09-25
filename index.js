@@ -47,7 +47,7 @@ var Mentat = {
 
     start: function start() {
         var self = this;
-        var _plugins = [
+        var plugins = [
             { register: require('inert') },
             { register: require('hapi-auth-jwt2') },
             {
@@ -65,7 +65,7 @@ var Mentat = {
         self._loadMethods();
         self._loadHandlers();
 
-        self.server.register(_plugins, function (err) {
+        self.server.register(plugins, function (err) {
             if (err) {
                 throw err;
             }
