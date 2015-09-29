@@ -12,7 +12,10 @@ var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
 var DEFAULT_SETTINGS = {
     auth: {
         key: undefined,
-        tokenTTL: 0
+        tokenTTL: 0,
+        validator: function validator (decoded, request, callback) {
+            return callback(null, true);
+        }
     },
     hapi: {
         serverOptions: {
@@ -47,6 +50,9 @@ var Mentat = {
 
     start: function start() {
         var self = this;
+
+        self._loadSettings();
+
         var plugins = [
             { register: require('inert') },
             { register: require('hapi-auth-jwt2') },
@@ -56,44 +62,47 @@ var Mentat = {
             }
         ];
 
-        self._loadSettings();
         self._loadValidator();
         self._loadServer();
         self._loadTransporter();
-        //self._loadModels();
+        self._loadModels();
         self._loadControllers();
         self._loadMethods();
         self._loadHandlers();
 
-        self.server.register(plugins, function (err) {
+        self.server.register(plugins, function serverRegisterDone (err) {
             if (err) {
                 throw err;
             }
 
-            self.server.auth.strategy('jwt', 'jwt', {
-                key: self.settings.auth.key,
-                validateFunc: self.validator,
-                verifyOptions: { algorithms: [ 'HS256' ] }
-            });
+            if (self.settings.auth.key) {
 
-            self.server.auth.default('jwt');
+                self.server.auth.strategy('jwt', 'jwt', {
+                    key: self.settings.auth.key,
+                    validateFunc: self.validator,
+                    verifyOptions: { algorithms: [ 'HS256' ] }
+                });
+
+                self.server.auth.default('jwt');
+
+            }
 
             self._loadRoutes();
-/*
+
             self.server.on('response', function (request) {
-                winston.log('[%s] %s %s - %s',
+                self.server.log('[%s] %s %s - %s',
                     request.info.remoteAddress,
                     request.method.toUpperCase(),
                     request.url.path,
                     request.response.statusCode);
             });
-*/
+
             self.server.start(function serverStartDone (err) {
                 if (err) {
-                    self.server.log('error', err);
+                    console.log(err);
                     return;
                 }
-                self.server.log('info', 'server listening: %s', self.server.info.uri);
+                self.server.log(['info'], 'server listening: ' + self.server.info.uri);
                 self._loadSockets();
             });
 
@@ -117,10 +126,7 @@ var Mentat = {
 
     _loadValidator: function _loadValidator () {
         var self = this;
-        self.validator = requireIfExists(path.join(APP_PATH, 'config/validator')) ||
-            function (decoded, request, callback) {
-                return callback(null, true);
-            };
+        self.validator = requireIfExists(path.join(APP_PATH, 'config/validator')) || self.settings.auth.validator;
     },
 
     _loadServer: function _loadServer() {
@@ -142,7 +148,7 @@ var Mentat = {
         self.server.app.io.on('connection', function (socket) {
             var remoteAddress = socket.client.conn.remoteAddress;
 
-            self.server.log('info', 'socket.io: [' + socket.id + '] connected: ' + remoteAddress);
+            console.log('socket.io: [' + socket.id + '] connected: ' + remoteAddress);
 
             var socketPluginsPath = path.join(APP_PATH, 'sockets');
 
@@ -151,7 +157,7 @@ var Mentat = {
                     var socketsModule = requireIfExists(path.join(socketPluginsPath, file));
                     if (socketsModule) {
                         socketsModule(socket);
-                        self.server.log('info', 'socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
+                        console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
                     }
                 });
             } catch (e) {
@@ -163,33 +169,35 @@ var Mentat = {
         });
     },
 
-    /*
-       _loadModels: function _loadModels () {
-       var self = this;
 
-       var Sequelize = require('sequelize');
-       var config = require(path.join(APP_PATH, 'config/database.json'))[NODE_ENV];
-       var sequelize = new Sequelize(config.database, config.username, config.password, config);
-       var modelsPath = path.join(APP_PATH, 'db/models');
+    _loadModels: function _loadModels () {
+        var self = this;
 
-       fs
-       .readdirSync(path.join(modelsPath))
-       .filter(function(file) {
-       return file.indexOf('.') !== 0;
-       })
-       .forEach(function (file) {
-       var model = sequelize['import'](path.join(modelsPath, file));
-       self.models[model.name] = model;
-       console.log('model loaded: ' + model.name);
-       });
+        self.models = {};
 
-       Object.keys(self.models).forEach(function(modelName) {
-       if ('associate' in self.models[modelName]) {
-       self.models[modelName].associate(self.models);
-       }
-       });
-       },
-       */
+        var Sequelize = require('sequelize');
+        var config = require(path.join(APP_PATH, 'config/database.json'))[NODE_ENV];
+        var sequelize = new Sequelize(config.database, config.username, config.password, config);
+        var modelsPath = path.join(APP_PATH, 'db/models');
+
+        fs
+            .readdirSync(path.join(modelsPath))
+            .filter(function(file) {
+                return file.indexOf('.') !== 0;
+            })
+        .forEach(function (file) {
+            var model = sequelize['import'](path.join(modelsPath, file));
+            self.models[model.name] = model;
+            console.log('model loaded: ' + model.name);
+        });
+
+        Object.keys(self.models).forEach(function(modelName) {
+            if ('associate' in self.models[modelName]) {
+                self.models[modelName].associate(self.models);
+            }
+        });
+    },
+       
     _loadHandlers: function _loadHandlers () {
         var self = this;
 
@@ -199,7 +207,7 @@ var Mentat = {
                     return name.split('.')[0];
                 },
                 visit: function (obj) {
-                    self.server.log('info', 'handler loaded: ' + obj.name);
+                    console.log('handler loaded: ' + obj.name);
                     if (obj.routes !== undefined) {
                         _.each(obj.routes, function (route) {
 
@@ -213,7 +221,7 @@ var Mentat = {
                                 }
                             });
 
-                            self.server.log('info', util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
+                            console.log(util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
                         });
                     }
                 }
@@ -229,6 +237,8 @@ var Mentat = {
     _loadControllers: function _loadControllers () {
         var self = this;
 
+        self.controllers = {};
+
         try {
             fs
                 .readdirSync(path.join(APP_PATH, 'controllers'))
@@ -238,7 +248,7 @@ var Mentat = {
             .forEach(function (file) {
                 var controller = require(path.join(APP_PATH, 'controllers/', file));
                 self.controllers[controller.name] = controller;
-                self.server.log('info', 'controller loaded: ' + controller.name);
+                console.log('controller loaded: ' + controller.name);
             });
         } catch (e) {
             if (e instanceof Error && e.code === 'ENOENT') {
