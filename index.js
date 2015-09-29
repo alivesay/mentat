@@ -215,13 +215,13 @@ var Mentat = {
                                 method: route.method,
                                 path: route.path,
                                 config: {
-                                    handler: obj[route.method],
+                                    handler: obj[route.handler] || obj[route.method],
                                     validate: route.validate,
                                     auth: route.auth
                                 }
                             });
 
-                            console.log(util.format('routing: %s %s -> %s', route.method, route.path, obj.name));
+                            console.log(util.format('routing: %s %s -> %s\#%s', route.method, route.path, obj.name, route.handler || route.method));
                         });
                     }
                 }
@@ -261,9 +261,10 @@ var Mentat = {
     _loadRoutes: function _loadRoutes () {
         var self = this;
         var routes = requireIfExists(path.join(APP_PATH, 'config/routes'));
-        if (routes) {
-            self.server.route(routes(self.handlers));
-        }
+        routes(self.handlers).map(function (route) {
+            self.server.route(route);
+            console.log(util.format('routing: %s %s', route.method, route.path));
+        });
     },
 
     _loadMethods: function _loadMethods () {
