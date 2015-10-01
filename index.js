@@ -145,7 +145,7 @@ var Mentat = {
         self.server.app.io = io;
         self.io = io;
 
-        self.server.app.io.on('connection', function (socket) {
+        self.io.on('connection', function (socket) {
             var remoteAddress = socket.client.conn.remoteAddress;
 
             console.log('socket.io: [' + socket.id + '] connected: ' + remoteAddress);
@@ -278,7 +278,7 @@ var Mentat = {
     _loadTransporter: function _loadTransporter() {
         var self = this;
         self.server.app.transporter = require('nodemailer')
-            .createTransport(self.settings.nodemailerOptions);
+            .createTransport(require('nodemailer-smtp-transport')(self.settings.nodemailerOptions));
 
         self.transporter = self.server.app.transporter;
     }
