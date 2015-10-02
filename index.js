@@ -141,11 +141,23 @@ var Mentat = {
     _loadSockets: function _loadSockets () {
         var self = this;
         var io = require('socket.io')(self.server.listener);
+        var socketioJwt = require('socketio-jwt');
 
         self.server.app.io = io;
         self.io = io;
 
-        self.io.on('connection', function (socket) {
+        self.io.sockets
+            .on('connection', socketioJwt.authorize({
+                secret: self.settings.auth.key,
+                timeout: 15000
+            }))
+            .on('authenticated', socketAuthenticated)
+            .on('error', function (error) {
+                console.log(error);
+            });
+                
+
+        function socketAuthenticated (socket) {
             var remoteAddress = socket.client.conn.remoteAddress;
 
             console.log('socket.io: [' + socket.id + '] connected: ' + remoteAddress);
@@ -166,7 +178,7 @@ var Mentat = {
                 }
                 throw e;
             }
-        });
+        }
     },
 
 
