@@ -165,13 +165,18 @@ var Mentat = {
             var socketPluginsPath = path.join(APP_PATH, 'sockets');
 
             try {
-                fs.readdirSync(socketPluginsPath).forEach(function (file) {
-                    var socketsModule = requireIfExists(path.join(socketPluginsPath, file));
-                    if (socketsModule) {
-                        socketsModule(socket);
-                        console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
-                    }
-                });
+                fs
+                    .readdirSync(socketPluginsPath)
+                    .filter(function (filename) {
+                        return filename.indexOf('.') !== 0 && _.endsWith(filename, '.sockets.js')
+                    })
+                    .forEach(function (file) {
+                        var socketsModule = requireIfExists(path.join(socketPluginsPath, file));
+                        if (socketsModule) {
+                            socketsModule(socket);
+                            console.log('socket.io: [' + socket.id + '] loaded: ' + file.split('.')[0]);
+                        }
+                    });
             } catch (e) {
                 if (e instanceof Error && e.code === 'ENOENT') {
                     return;
@@ -194,8 +199,8 @@ var Mentat = {
 
         fs
             .readdirSync(path.join(modelsPath))
-            .filter(function(file) {
-                return file.indexOf('.') !== 0;
+            .filter(function(filename) {
+                return filename.indexOf('.') !== 0 && _.endsWith(filename, '.js');
             })
         .forEach(function (file) {
             var model = sequelize['import'](path.join(modelsPath, file));
@@ -215,6 +220,7 @@ var Mentat = {
 
         try {
             self.handlers = requireDirectory(module, path.join(APP_PATH, 'handlers'), {
+                whitelist: /.*\.handler\.js$/,
                 rename: function (name) {
                     return name.split('.')[0];
                 },
@@ -254,8 +260,8 @@ var Mentat = {
         try {
             fs
                 .readdirSync(path.join(APP_PATH, 'controllers'))
-                .filter(function(file) {
-                    return file.indexOf('.') !== 0;
+                .filter(function(filename) {
+                    return filename.indexOf('.') !== 0 && _.endsWith(filename, '.controller.js');
                 })
             .forEach(function (file) {
                 var controller = require(path.join(APP_PATH, 'controllers/', file));
