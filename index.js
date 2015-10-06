@@ -90,11 +90,11 @@ var Mentat = {
             self._loadRoutes();
 
             self.server.on('response', function (request) {
-                self.server.log('[%s] %s %s - %s',
+                self.server.log(['info'], util.format('[%s] %s %s - %s',
                     request.info.remoteAddress,
                     request.method.toUpperCase(),
                     request.url.path,
-                    request.response.statusCode);
+                    request.response.statusCode));
             });
 
             self.server.start(function serverStartDone (err) {
@@ -149,7 +149,8 @@ var Mentat = {
         self.io.sockets
             .on('connection', socketioJwt.authorize({
                 secret: self.settings.auth.key,
-                timeout: 15000
+                timeout: 15000,
+                required: false
             }))
             .on('authenticated', socketAuthenticated)
             .on('error', function (error) {
