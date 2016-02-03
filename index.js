@@ -188,12 +188,11 @@ var Mentat = {
           console.log('handler loaded: ' + obj.name);
           if (obj.routes !== undefined) {
            _.each(obj.routes, function (route) {
-   
               self.server.route({
                 method: route.method,
                 path: route.path,
                 config: {
-                  handler: obj[route.method],
+                  handler: obj[route.handler] || obj[route.method],
                   validate: route.validate,
                   auth: route.auth
                 }
