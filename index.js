@@ -12,7 +12,7 @@ var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
 var Mentat = {
   server: undefined,
   settings: {},
-  // models: {},
+  models: {},
   controllers: {},
   handlers: {},
   io: {},
@@ -32,7 +32,7 @@ var Mentat = {
     self._loadValidator();
     self._loadServer();
     self._loadTransporter();
-    //self._loadModels();
+    self._loadModels();
     self._loadControllers();
     self._loadMethods();
     self._loadHandlers();
@@ -149,7 +149,7 @@ var Mentat = {
     });
   },
 
-/*
+
   _loadModels: function _loadModels () {
     var self = this;
 
@@ -175,7 +175,7 @@ var Mentat = {
       }
     });
   },
-*/
+
   _loadHandlers: function _loadHandlers () {
     var self = this;
     
