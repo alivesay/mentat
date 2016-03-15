@@ -1,7 +1,7 @@
 {
   "name": "mentat",
-  "version": "2.0.20",
-  "description": "A lightweight, real-time web app framework built with Hapi, Angular, Sequelize, Jade, and Socket.IO.",
+  "version": "2.0.22",
+  "description": "A lightweight web app framework built with Hapi, Angular, Sequelize, Jade, and Socket.IO.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

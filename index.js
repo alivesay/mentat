@@ -5,6 +5,9 @@ var util = require('util');
 var path = require('path');
 var fs = require('fs');
 var requireDirectory = require('require-directory');
+var cls = require('continuation-local-storage');
+
+var ns = cls.createNamespace('mentat');
 
 var NODE_ENV = process.env.NODE_ENV || 'development';
 var APP_PATH = path.join(path.dirname(module.parent.filename), 'server');
@@ -47,6 +50,7 @@ var DEFAULT_SETTINGS = {
 var Mentat = {
     Handler: Handler,
     Controller: Controller,
+    Namespace: ns,
 
     start: function start() {
         var self = this;
@@ -89,14 +93,6 @@ var Mentat = {
 
             self._loadRoutes();
 
-            self.server.on('response', function (request) {
-                self.server.log(['info'], util.format('[%s] %s %s - %s',
-                    request.info.remoteAddress,
-                    request.method.toUpperCase(),
-                    request.url.path,
-                    request.response.statusCode));
-            });
-
             self.server.start(function serverStartDone (err) {
                 if (err) {
                     console.log(err);
@@ -136,6 +132,15 @@ var Mentat = {
         self.server = new Hapi.Server(self.settings.hapi.serverOptions);
 
         self.server.connection(self.settings.hapi.connectionOptions);
+        
+        self.server.ext('onRequest', function (request, reply) {
+            ns.bindEmitter(request.raw.req);
+            ns.bindEmitter(request.raw.res);
+            ns.run(function () {
+                ns.set('requestId', request.id);
+                reply.continue();
+            });
+        });
     },
 
     _loadSockets: function _loadSockets () {
@@ -194,6 +199,7 @@ var Mentat = {
         self.models = {};
 
         var Sequelize = require('sequelize');
+        Sequelize.cls = ns;
         var config = require(path.join(APP_PATH, 'config/database.json'))[NODE_ENV];
         var sequelize = new Sequelize(config.database, config.username, config.password, config);
         var modelsPath = path.join(APP_PATH, 'db/models');
