@@ -1,6 +1,6 @@
 {
   "name": "mentat",
-  "version": "2.0.22",
+  "version": "2.0.23",
   "description": "A lightweight web app framework built with Hapi, Angular, Sequelize, Jade, and Socket.IO.",
   "main": "index.js",
   "scripts": {
@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "boom": "^2.9.0",
+    "continuation-local-storage": "^3.1.6",
     "good": "^6.4.0",
     "good-console": "^5.1.0",
     "good-file": "^5.1.0",
